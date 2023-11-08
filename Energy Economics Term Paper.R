@@ -9,81 +9,56 @@ library(dplyr)
 library(writexl)
 library(readxl)
 library(readr)
+library(logitr)
+library(mlogit)
 library(AER)
 library(ggplot2)
+library(haven)
+library(RegUtils)
 
 #################### LOAD DATA ####################
 
-RECS <- read_csv("/Users/willacperlman/recs2020_public_v5.csv")
+RECS <- read_sas("/Users/willacperlman/recs2020_public_v5.sas7bdat")
 OR_ACS <- read_csv("/Users/willacperlman/psam_h41.csv")
 ### WA_ACS <- read_csv("/Users/willacperlman/psam_h53.csv")
 
-########## RECODE ENERGY SECURITY VARIABLES OF INTEREST #########
+########## ENERGY INSECURITY VARIABLES OF INTEREST #########
 
-df <- as_tibble(RECS)%>%
-  mutate(SCALEB2 = case_when(
-    SCALEB == 1 ~ 3,
-    SCALEB == 3 ~ 1,
-    .default = as.numeric(SCALEB)
-  ))%>%
-  mutate(SCALEG2 = case_when(
-    SCALEG == 1 ~ 3,
-    SCALEG == 3 ~ 1,
-    .default = as.numeric(SCALEG)
-))%>%
-  mutate(SCALEE2 = case_when(
-    SCALEE == 1 ~ 3,
-    SCALEE == 3 ~ 1,
-    .default = as.numeric(SCALEE)
-  ))
+####### SELECT & RECODE RECS DATA #####
 
-####### COMPUTE ACS METRICS OF INTEREST #####
-####### DOING SOMETHING WRONG HERE ##########
-
-df2 <- OR_ACS
-
-df2%>%
-  select(BLD,TYPEHUGQ,WGTP)%>%
+df2 <- RECS%>%
+  select(TYPEHUQ, KOWNRENT, NOHEATDAYS, NOACDAYS, MONEYPY, HOUSEHOLDER_RACE, NHSLDMEM,
+         NUMCHILD, NUMADULT2, ATHOME)%>%
   mutate(buildingType = case_when(
-    BLD == "01" ~ "Mobile home or trailer",
-    BLD == "02" ~ "One-family house detached",
-    BLD == "03" ~ "One family house attached",
-    BLD == "04" ~ "2 Apartments",
-    BLD == "05" ~ "3-4 Apartments",
-    BLD == "06" ~ "5-9 Apartments",
-    BLD == "07" ~ "10-19 Apartments",
-    BLD == "08" ~ "20-49 Apartments",
-    BLD == "09" ~ "50+ Apartments",
-    BLD == "10" ~ "Boat, RV, van, etc."
+    TYPEHUQ == "1" ~ "Mobile home",
+    TYPEHUQ == "2" ~ "Single-family detached",
+    TYPEHUQ == "3" ~ "Single-family attached",
+    TYPEHUQ == "4" ~ "Multi-family small",
+    TYPEHUQ == "5" ~ "Multi-family large"
   ))
+
+####### CALCULATE PROPORTION OF DWELLINGS #####
+####### DO I NEED TO USE WEIGHTING HERE?
 
 result <- df2%>%
   group_by(buildingType)%>%
-  summarise(Percentage = n() / nrow(OR_ACS) * 100)
+  summarise(Percentage = n() / nrow(RECS) * 100)
 
 print(result)
 
-########## COMPUTE CORRELATIONS #########
+ivtobit <- 
 
-C1 <- cor(df$TYPEHUQ,df$SCALEB2)
-C2 <- cor(df$TYPEHUQ, df$SCALEG2)
-C3 <- cor(df$TYPEHUQ, df$SCALEE2)
-C4 <- cor(df$TYPEHUQ, df$MONEYPY)
-C5 <- cor(df$TYPEHUQ,df$HOUSEHOLDER_RACE)
-C6 <- cor(df$MONEYPY,df$HOUSEHOLDER_RACE)
-C7 <- cor(df$KOWNRENT, df$SCALEG2)
-C8 <- cor(df$KOWNRENT, df$SCALEB2)
-C9 <- cor(df$TYPEHUQ, df$SCALEE2)
+########## JUNKYARD #########
 
 ##compute first-stage regression, fraction of explained variation
 
-R1 <- summary(lm(df$TYPEHUQ ~ df$HOUSEHOLDER_RACE))$r.squared
-R2 <- summary(lm(df$TYPEHUQ ~ df$SCALEB2))$r.squared
-R3 <- summary(lm(df$KOWNRENT ~ df$SCALEB2))$r.squared
+## R1 <- summary(mlogit(df2$buildingType ~ df2$HOUSEHOLDER_RACE))$r.squared
+## R2 <- summary(lm(df$TYPEHUQ ~ df$SCALEB2))$r.squared
+## R3 <- summary(lm(df$KOWNRENT ~ df$SCALEB2))$r.squared
 
 ## estimate IV regression of log(scaleg) on ??
 ## in progress -- quite confused
 
-scaleg_mod_iv1 <- ivreg(log(df$SCALEG) ~ df$TYPEHUQ | df$HOUSEHOLDER_RACE)
+## scaleg_mod_iv1 <- ivreg(log(df$SCALEG) ~ df$TYPEHUQ | df$HOUSEHOLDER_RACE)
 
-scaleg_mod_iv2 <- ivreg(log(SCALEG) ~ )
+## scaleg_mod_iv2 <- ivreg(log(SCALEG) ~ )
