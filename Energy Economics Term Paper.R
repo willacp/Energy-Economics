@@ -41,7 +41,6 @@ df <- RECS%>%
   ))
 
 ####### CALCULATE PROPORTION OF DWELLINGS #####
-####### DO I NEED TO USE WEIGHTING HERE?
 
 result <- df%>%
   group_by(buildingType)%>%
@@ -49,10 +48,21 @@ result <- df%>%
 
 print(result)
 
+######### CONVERT CATEGORICAL VARIABLES TO FACTORS ######
+
+df$KOWNRENT <- as.factor(df$KOWNRENT)
+df$TYPEHUQ <- as.factor(df$TYPEHUQ)
+df$HOUSEHOLDER_RACE <- as.factor(df$HOUSEHOLDER_RACE)
+df$NUMCHILD <- as.factor(df$NUMCHILD)
+df$NUMADULT2 <- as.factor(df$NUMADULT2)
+
+
 ######### RUN TOBIT ########
 
-estTobit <- tobit(NOHEATDAYS ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE, 
+tobitModel <- censReg(NOHEATDAYS ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE + ATHOME + NHSLDMEM,
                    left = 0, right = 366, data = df)
+
+summary(tobitModel)
 
 ivtobit <- 
 
