@@ -51,7 +51,8 @@ print(result)
 
 ######### RUN TOBIT ########
 
-est.tobit <- tobit(NOHEATDAYS ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE, left = 0, right = 366, data = df)
+estTobit <- tobit(NOHEATDAYS ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE, 
+                   left = 0, right = 366, data = df)
 
 ivtobit <- 
 
