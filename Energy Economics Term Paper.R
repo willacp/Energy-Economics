@@ -30,8 +30,12 @@ OR_ACS <- read_csv("/Users/willacperlman/psam_h41.csv")
 ####### SELECT & RECODE RECS DATA #####
 
 df <- RECS%>%
+  filter(NOHEATDAYS != -2)%>%
+  filter(NOACDAYS != -2)%>%
+  filter(KOWNRENT != 3)%>%
   select(TYPEHUQ, KOWNRENT, NOHEATDAYS, NOACDAYS, MONEYPY, HOUSEHOLDER_RACE, NHSLDMEM,
-         NUMCHILD, NUMADULT2, ATHOME)%>%
+         NUMCHILD, NUMADULT2, ATHOME, COLDMA, HOTMA, ENERGYASST20, ENERGYASST19, ENERGYASST18,
+         ENERGYASST17, ENERGYASST16, NOACEL, NOACBROKE, NOACHELP)%>%
   mutate(buildingType = case_when(
     TYPEHUQ == "1" ~ "Mobile home",
     TYPEHUQ == "2" ~ "Single-family detached",
@@ -47,6 +51,13 @@ result <- df%>%
   summarise(Percentage = n() / nrow(RECS) * 100)
 
 print(result)
+
+######### CALCULATE PROPORTION OF DWELLINGS BY INCOME AND RACE #####
+## in progress 
+
+## resultInc <- df%>%
+  
+##  group_by(buildingType)%>%
 
 ######### CONVERT CATEGORICAL VARIABLES TO FACTORS ######
 
@@ -64,7 +75,26 @@ tobitModel <- censReg(NOHEATDAYS ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RA
 
 summary(tobitModel)
 
-ivtobit <- 
+## woohoo I think this model actually gives me good results ##
+
+tobitModel2 <- censReg(NOACDAYS ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE + ATHOME + NHSLDMEM,
+                      left = 0, right = 366, data = df)
+
+summary(tobitModel2)
+
+tobitModel3 <- censReg(HOTMA ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE + ATHOME + NHSLDMEM,
+                       left = 0, right = 366, data = df)
+
+summary(tobitModel3)
+
+## I think I get the same values in both regressions using this y-variable ##
+
+realTobitModel <- tobit(HOTMA ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE + ATHOME + NHSLDMEM,
+                        left = 0, right = 366, data = df)
+
+summary(realTobitModel)
+
+## ivtobit <- 
 
 ########## JUNKYARD #########
 
