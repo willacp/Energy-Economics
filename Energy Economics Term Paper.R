@@ -18,6 +18,8 @@ library(RegUtils)
 library(maxLik)
 library(miscTools)
 library(censReg)
+library(glmmML)
+library(ivprobit)
 
 #################### LOAD DATA ####################
 
@@ -35,7 +37,7 @@ df <- RECS%>%
   filter(KOWNRENT != 3)%>%
   select(TYPEHUQ, KOWNRENT, NOHEATDAYS, NOACDAYS, MONEYPY, HOUSEHOLDER_RACE, NHSLDMEM,
          NUMCHILD, NUMADULT2, ATHOME, COLDMA, HOTMA, ENERGYASST20, ENERGYASST19, ENERGYASST18,
-         ENERGYASST17, ENERGYASST16, NOACEL, NOACBROKE, NOACHELP)%>%
+         ENERGYASST17, ENERGYASST16, NOACEL, NOACBROKE, NOACHELP, DOEID)%>%
   mutate(buildingType = case_when(
     TYPEHUQ == "1" ~ "Mobile home",
     TYPEHUQ == "2" ~ "Single-family detached",
@@ -70,31 +72,48 @@ df$NUMADULT2 <- as.factor(df$NUMADULT2)
 
 ######### RUN TOBIT ########
 
+#### attempt 1 with censReg #####
+
 tobitModel <- censReg(NOHEATDAYS ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE + ATHOME + NHSLDMEM,
                    left = 0, right = 366, data = df)
 
 summary(tobitModel)
 
-## woohoo I think this model actually gives me good results ##
+#### attempt 2 with censReg ####
 
 tobitModel2 <- censReg(NOACDAYS ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE + ATHOME + NHSLDMEM,
                       left = 0, right = 366, data = df)
 
 summary(tobitModel2)
 
+#### attempt 3 with censReg ####
+
 tobitModel3 <- censReg(HOTMA ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE + ATHOME + NHSLDMEM,
                        left = 0, right = 366, data = df)
 
 summary(tobitModel3)
 
-## I think I get the same values in both regressions using this y-variable ##
+#### attempt with tobit ####
 
-realTobitModel <- tobit(HOTMA ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE + ATHOME + NHSLDMEM,
+tobitModel <- tobit(HOTMA ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE + ATHOME + NHSLDMEM,
                         left = 0, right = 366, data = df)
 
-summary(realTobitModel)
+summary(tobitModel)
 
-## ivtobit <- 
+#### attempt with glm #####
+
+glmModel <- glm(HOTMA ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE + ATHOME + NHSLDMEM, family = binomial(link = "probit"), data = df)
+
+summary(glmModel)
+
+mlogitModel <- mlogit(HOTMA ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE + ATHOME + NHSLDMEM, data = df)
+
+#### attempt with ivprobit #####
+
+ivprobModel <- ivprobit(HOTMA ~ TYPEHUQ + KOWNRENT + MONEYPY + HOUSEHOLDER_RACE + ATHOME + NHSLDMEM, data = df)
+
+summary(ivprobModel)
+
 
 ########## JUNKYARD #########
 
